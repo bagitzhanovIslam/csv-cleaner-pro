@@ -5,6 +5,7 @@ import logging
 import streamlit as st
 from src.csv_cleaner.core import CleanerError, CleanOptions, clean_table, missing_mask
 from src.csv_cleaner.files import read_table, export_table
+from src.csv_cleaner.display import for_streamlit
 
 st.set_page_config(page_title='CSV Cleaner Pro', page_icon='🧹', layout='wide')
 st.title('CSV Cleaner Pro')
@@ -36,7 +37,7 @@ except Exception:
     st.stop()
 st.subheader('Исходные данные')
 st.caption(f'{len(frame):,} строк · {len(frame.columns)} столбцов · {int(missing_mask(frame).sum().sum())} пустых значений. Показаны первые 20 строк.')
-st.dataframe(frame.head(20), hide_index=True, width='stretch')
+st.dataframe(for_streamlit(frame.head(20)), hide_index=True, width='stretch')
 with st.container(border=True):
     st.subheader('Настройки очистки')
     columns = st.multiselect('Столбцы для очистки, дубликатов и обработки пропусков',
@@ -82,7 +83,7 @@ if 'result' in st.session_state:
     extra[1].metric('Осталось пропусков', report.missing_after)
     extra[2].metric('Удалено строк с пропусками', report.missing_rows_removed)
     st.caption(f'Изменено ячеек при очистке пробелов: {report.cells_changed}. Пустыми считаются отсутствующие значения, пустые строки и строки из пробелов; NA и NULL сохраняются как текст.')
-    st.dataframe(cleaned.head(20), hide_index=True, width='stretch')
+    st.dataframe(for_streamlit(cleaned.head(20)), hide_index=True, width='stretch')
     with st.expander('Отчёт по столбцам'):
         st.json(report.to_dict())
     format = st.radio('Формат результата', ['csv', 'xlsx'], horizontal=True)

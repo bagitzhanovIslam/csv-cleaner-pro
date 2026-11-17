@@ -63,3 +63,41 @@ def test_ui_drop_and_median(strategy, rows, filled):
         app.button[0].click().run()
         assert not app.exception and not app.error
         assert app.metric[0].value == rows and app.metric[4].value == filled
+
+
+@pytest.mark.parametrize('strategy', ['keep', 'drop', 'value', 'median'])
+def test_ui_previews_are_arrow_safe(strategy, caplog):
+    import pandas as pd
+    import pyarrow as pa
+    import streamlit as st
+    from pandas.testing import assert_frame_equal
+
+    source = pd.DataFrame({'возраст': ['001', '003', None, float('nan'), pd.NA],
+                           'сумма': [1.25, 3.5, None, float('nan'), pd.NA]}, dtype=object)
+    original = source.copy(deep=True)
+    dataframe = st.dataframe
+    displayed = []
+
+    def checked_dataframe(frame, **kwargs):
+        pa.Table.from_pandas(frame)  # Fail before Streamlit can auto-fix types.
+        displayed.append(frame.copy(deep=True))
+        return dataframe(frame, **kwargs)
+
+    with patch('streamlit.file_uploader', return_value=Upload(b'a\nb\n')), \
+         patch('src.csv_cleaner.files.read_table', return_value=source), \
+         patch('streamlit.dataframe', side_effect=checked_dataframe):
+        app = AppTest.from_file(str(APP)).run()
+        next(box for box in app.selectbox if box.label == 'Обработка пропусков').select(strategy).run()
+        if strategy == 'value':
+            app.text_input[0].input('нет').run()
+        displayed.clear()
+        app.button[0].click().run()
+        assert not app.exception and not app.error
+        assert len(displayed) == 2
+        assert len(app.dataframe) == 2
+        assert 'automatic fixes' not in caplog.text
+        assert_frame_equal(source, original)
+        cleaned, _ = app.session_state['result']
+        if strategy == 'median':
+            assert isinstance(cleaned.iloc[2, 0], float)
+            assert displayed[1].iloc[2, 0] == '2.0'
