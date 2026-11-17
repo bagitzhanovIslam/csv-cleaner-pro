@@ -1,0 +1,92 @@
+# CSV Cleaner Pro
+
+**Turn messy CSV and Excel tables into clean, downloadable data — locally.**
+
+A small Python portfolio project for practical data-cleaning jobs: inspect a table, choose explicit rules, compare the results, and download a new file with a JSON report.
+
+[Русская документация](README_RU.md) · [Learning guide (RU)](LEARNING_GUIDE_RU.md) · [Portfolio materials](docs/PORTFOLIO_RU.md) · [Verification status](docs/VERIFICATION_RU.md)
+
+## What it does
+
+- Opens CSV and XLSX and previews the first 20 rows.
+- Counts missing cells, including empty strings and whitespace.
+- Optionally trims whitespace, removes duplicate rows, and removes fully empty rows.
+- Lets you choose the columns used for whitespace cleaning and duplicate comparison.
+- Reports rows before/after, duplicate and empty row removals, changed cells, and missing cells per column.
+- Downloads a new CSV (UTF-8 with BOM) or XLSX and a JSON report.
+
+All cleaning switches start **off**. Your original file is never overwritten. Files stay in the local Streamlit process; no paid services or external processing APIs are used.
+
+## Run locally
+
+Python **3.12+**, on Linux, macOS, or Windows. On Arch Linux/CachyOS, use a virtual environment; do not install packages into system Python.
+
+```bash
+cd /home/kael/csv-cleaner-pro
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m streamlit run app.py
+```
+
+Open **http://127.0.0.1:8501**. Stop with `Ctrl+C`. On Windows activate with `.venv\Scripts\activate`. A network connection is needed to install dependencies, but processing runs locally afterward.
+
+## Try the demo
+
+1. Upload `examples/demo_input.csv` or `examples/demo_input.xlsx`.
+2. Keep all columns selected and enable all three cleaning switches.
+3. Click **Запустить обработку**.
+4. Expect **6 → 3 rows**, **1 duplicate** and **2 empty rows** removed, **9 → 1 missing cells**, and **5 cells** changed by whitespace cleaning.
+5. Download the result and compare it with `examples/demo_output.csv` and `examples/cleaning_report.json`.
+
+The demo uses fictional product records, without personal data. The interface is in Russian; the code uses English names.
+
+## Rules that matter
+
+| Topic | Behavior |
+|---|---|
+| Header | First row is the header. Blank and repeated names receive unique labels; original spelling and spaces are otherwise retained. |
+| CSV encoding | Auto reads UTF-8/BOM or BOM-marked UTF-16. Choose cp1251 explicitly for legacy Russian files. Decoding never silently replaces characters. |
+| CSV delimiter | Auto attempts comma, semicolon, tab or pipe. Manual override is available. Check the preview before cleaning; ambiguous detection can produce a single column. |
+| Values | CSV is read as text to preserve `001`, `NA`, `NULL`, and dates. XLSX retains native numbers/dates where available. No automatic type conversion or missing-value filling. |
+| Missing cells | Null, empty string, and whitespace-only text count as missing. Missing values are reported across **all** columns. |
+| Whitespace | In selected text columns, trim edges and collapse whitespace runs (including line breaks) to one space. |
+| Duplicates | After whitespace cleaning and optional empty-row removal, compare selected columns and keep the first row. Selecting fewer columns can remove rows with different values elsewhere. |
+| Empty rows | Remove only when every cell across the entire table is missing. Independent of the column selection. |
+| XLSX scope | Only the selected worksheet, starting at row 1, is processed. Styles, charts, other sheets and workbook metadata are not copied. Formula text is read without execution and exported as text. |
+| Empty data | Zero-byte/blank files are errors; a header-only table is valid. XLSX trailing unused rows are not reliable data records. |
+
+## Limits and file safety
+
+Upload: **10 MiB**. XLSX uncompressed entries: **50 MiB**. Table: **100,000 rows**, **200 columns**, **1,000,000 cells**. Limits apply in both the interface and reader. This is an in-memory tool for small jobs, not a streaming or hostile-file isolation service. Do not expose it publicly without additional resource and access controls.
+
+Only `.csv` and `.xlsx` are accepted. XLS/XLSM and macro-bearing workbooks are rejected. No uploaded code or macros are executed; openpyxl reads data and defusedxml hardens XML parsing. Corrupted files and invalid CSV row widths produce visible errors. Unexpected errors are logged with a traceback in the local terminal instead of being silently ignored.
+
+XLSX exports force text cells, including strings starting with `=`, to remain text. CSV preserves original values: spreadsheet applications may interpret formula-like text when opened. Import such CSV columns explicitly as text or choose XLSX. No automatic prefix is added that would silently change your data.
+
+## Tests and project layout
+
+```bash
+python -m pytest -q
+python -m scripts.generate_examples
+```
+
+```text
+app.py                       Streamlit interface and session state
+src/csv_cleaner/core.py       Pure cleaning functions and report
+src/csv_cleaner/files.py      Bounded readers and in-memory exporters
+tests/                       Processing, file, UI and repository checks
+examples/                    Fictional before/after CSV, XLSX and JSON
+scripts/generate_examples.py  Rebuild examples with the actual pipeline
+docs/                        Portfolio, screenshots and verification notes
+```
+
+Tests cover encodings, delimiters, Russian text, duplicates, empty rows, disabled rules, selected columns, malformed files, size limits, formula text, and export/reimport. Streamlit AppTest covers the initial screen, processing, result invalidation and errors. See [verification notes](docs/VERIFICATION_RU.md) for what actually ran in the creation environment; test presence is not a claim that all tests passed.
+
+Dependencies use bounded version ranges in `requirements.txt`; this is not a fully pinned lockfile. Tested environment details and any installation blockers are recorded separately. No database is needed.
+
+## Portfolio and license
+
+Skills: Python, pandas, openpyxl, Streamlit, pytest, CSV/Excel automation, validation, type hints, error handling, Git. Honest portfolio copy and a job proposal template are in [docs/PORTFOLIO_RU.md](docs/PORTFOLIO_RU.md). Screenshot instructions are in [docs/SCREENSHOTS_RU.md](docs/SCREENSHOTS_RU.md).
+
+MIT License — see [LICENSE](LICENSE).

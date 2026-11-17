@@ -1,0 +1,11 @@
+{
+  "rows_before": 6,
+  "rows_after": 3,
+  "duplicates_removed": 1,
+  "empty_rows_removed": 2,
+  "missing_before": 9,
+  "missing_after": 1,
+  "missing_by_column_before": {"Код": 2, "Товар": 2, "Город": 2, "Комментарий": 3},
+  "missing_by_column_after": {"Код": 0, "Товар": 0, "Город": 0, "Комментарий": 1},
+  "cells_changed": 5
+}

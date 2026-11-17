@@ -1,0 +1,9 @@
+[project]
+name = "csv-cleaner-pro"
+version = "1.0.0"
+description = "Local Streamlit app for explicit CSV and Excel cleaning"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
