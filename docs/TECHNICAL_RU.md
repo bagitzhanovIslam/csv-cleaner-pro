@@ -25,30 +25,22 @@ CSV сохраняет текст без изменений: Excel может и
 ## Разработка и проверка
 
 ```bash
-python -m pytest -q
+python -m pytest -W error -q
 python -m scripts.generate_examples
 ```
 
 `app.py` отвечает за интерфейс; `src/csv_cleaner/core.py` — за очистку и отчёт; `src/csv_cleaner/files.py` — за чтение, ограничения и экспорт. `tests/` содержит тесты логики, файлов и Streamlit AppTest. `requirements.txt` задаёт диапазоны совместимых версий, а не точный lockfile.
 
-Фактически выполненные проверки и ограничения среды указаны в [docs/VERIFICATION_RU.md](VERIFICATION_RU.md). Наличие тестов не означает, что все они уже выполнены успешно.
+Воспроизводимые команды, покрытие и актуальные результаты: [TESTING.md](../TESTING.md).
 
-[Как снять скриншоты](SCREENSHOTS_RU.md) · [Описание для Freelancehunt и шаблон отклика](PORTFOLIO_RU.md). Лицензия MIT.
+## Архитектура
 
-## Fish shell и Arch Linux
-
-Запуск без активации окружения (подходит и для Bash):
-
-Из корня репозитория:
-
-```fish
-python -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m streamlit run app.py
-```
-
-Если нужна активация в Fish: `source .venv/bin/activate.fish`.
-Проверки: `.venv/bin/python -m pytest -W error -q`.
+Интерфейс передаёт байты загрузки в `read_table()`, полученную таблицу и неизменяемые
+параметры `CleanOptions` — в `clean_table()`, результат — в `export_table()`.
+Очистка работает с копией и возвращает `CleanReport`. Результат сохраняется в сессии
+Streamlit. Ключ из хеша файла, его имени и параметров чтения/очистки сбрасывает
+устаревший результат при изменении входных данных. Преобразование предпросмотра
+в `display.py` не меняет данные очистки или экспорта.
 
 ## Обработка пропусков
 
@@ -80,8 +72,8 @@ assert report.cells_filled == 1
 ```
 
 Дополнительные примеры пропусков создаёт `.venv/bin/python -m scripts.generate_examples`.
-В Git допускаются только вымышленные примеры; локальные данные храните в
-игнорируемых `data/`, `uploads/` или `output/`. Перед публикацией проверяйте индекс Git.
+Каталог `examples/` содержит только вымышленные данные. Локальные окружения, кеши,
+учётные данные и рабочие каталоги исключены через `.gitignore`.
 
 ## Языки интерфейса
 
@@ -96,3 +88,7 @@ JSON-экспорт сохраняет исходные английские т�
 
 Необязательный `scripts/capture_screenshots.py` снимает настоящее приложение через
 Playwright и проверяет скачивание; [инструкция](SCREENSHOTS_RU.md).
+
+## Лицензия
+
+MIT — [LICENSE](../LICENSE).

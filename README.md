@@ -2,9 +2,9 @@
 
 **Turn messy CSV and Excel tables into clean, downloadable data — locally.**
 
-Clean product lists, price tables and other CSV/XLSX files with rules you choose. Preview the data, remove duplicates and extra spaces, handle missing values, then download the result and a JSON report. A local portfolio demo with fictional sample data.
+Clean product lists, price tables and other CSV/XLSX files with rules you choose. Preview the data, remove duplicates and extra spaces, handle missing values, then download the result and a JSON report. Includes fictional sample data.
 
-[Русская документация](README_RU.md) · [Learning guide (RU)](LEARNING_GUIDE_RU.md) · [Portfolio materials](docs/PORTFOLIO_RU.md) · [Verification status](docs/VERIFICATION_RU.md)
+[Русская документация](README_RU.md) · [Technical reference](docs/TECHNICAL.md) · [Testing](TESTING.md)
 
 ## What it does
 
@@ -66,8 +66,8 @@ Playwright is optional and needed only to reproduce the browser check and screen
 ## Documentation
 
 - [Technical reference](docs/TECHNICAL.md): exact rules, limits, API examples, tests and project layout.
-- [Russian technical reference](docs/TECHNICAL_RU.md) and [learning guide](LEARNING_GUIDE_RU.md).
-- [Verification record](docs/VERIFICATION_RU.md) and [portfolio materials](docs/PORTFOLIO_RU.md).
+- [Russian technical reference](docs/TECHNICAL_RU.md).
+- [Testing](TESTING.md): reproducible commands, coverage and tested versions.
 
 Run checks from the repository root, with the virtual environment activated:
 
@@ -75,4 +75,15 @@ Run checks from the repository root, with the virtual environment activated:
 python -m pytest -W error -q
 ```
 
-MIT License — see [LICENSE](LICENSE).
+## Limitations
+
+- CSV/XLSX only; one XLSX sheet per run. Workbook styles, charts and other sheets are not retained.
+- Maximum upload: **10 MiB**; expanded XLSX: **50 MiB**; table: **100,000 rows**, **200 columns**, **1,000,000 cells**.
+- Processing runs in memory on localhost. Public deployment requires additional access and resource controls.
+- CSV delimiter detection can be ambiguous; check the preview or choose a delimiter manually.
+- CSV preserves formula-like text; spreadsheet applications may interpret it as formulas. Import these cells as text or choose XLSX, which exports strings as text.
+- Native Streamlit and browser controls may use their own language.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

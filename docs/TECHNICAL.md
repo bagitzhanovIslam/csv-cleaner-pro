@@ -28,7 +28,7 @@ XLSX exports force text cells, including strings starting with `=`, to remain te
 ## Tests and project layout
 
 ```bash
-python -m pytest -q
+python -m pytest -W error -q
 python -m scripts.generate_examples
 ```
 
@@ -39,33 +39,24 @@ src/csv_cleaner/files.py      Bounded readers and in-memory exporters
 tests/                       Processing, file, UI and repository checks
 examples/                    Fictional before/after CSV, XLSX and JSON
 scripts/generate_examples.py  Rebuild examples with the actual pipeline
-docs/                        Portfolio, screenshots and verification notes
+docs/                        Technical reference and screenshots
 ```
 
-Tests cover encodings, delimiters, Russian text, duplicates, empty rows, disabled rules, selected columns, malformed files, size limits, formula text, and export/reimport. Streamlit AppTest covers the initial screen, processing, result invalidation and errors. See [verification notes](VERIFICATION_RU.md) for what actually ran in the creation environment; test presence is not a claim that all tests passed.
+Tests cover encoding, delimiters, missing values, cleaning order, input validation,
+exports, Arrow-safe previews and language-switch state preservation. Commands and
+tested versions are in [TESTING.md](../TESTING.md).
 
-Dependencies use bounded version ranges in `requirements.txt`; this is not a fully pinned lockfile. Tested environment details and any installation blockers are recorded separately. No database is needed.
+Dependencies use bounded version ranges in `requirements.txt`, rather than a pinned
+lockfile. No database is required.
 
-## Portfolio and license
+## Architecture
 
-Skills: Python, pandas, openpyxl, Streamlit, pytest, CSV/Excel automation, validation, type hints, error handling, Git. Honest portfolio copy and a job proposal template are in [docs/PORTFOLIO_RU.md](PORTFOLIO_RU.md). Screenshot instructions are in [docs/SCREENSHOTS_RU.md](SCREENSHOTS_RU.md).
-
-MIT License — see [LICENSE](../LICENSE).
-
-## Fish shell on Arch Linux
-
-No activation is required; these commands work in Fish and Bash:
-
-Run from the repository root:
-
-```fish
-python -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m streamlit run app.py
-```
-
-For optional Fish activation use `source .venv/bin/activate.fish`.
-Run checks with `.venv/bin/python -m pytest -W error -q`.
+The interface reads uploaded bytes through `read_table()`, passes the resulting
+DataFrame and immutable `CleanOptions` to `clean_table()`, then exports through
+`export_table()`. Cleaning operates on a copy and returns a `CleanReport`.
+Streamlit session state retains the result; a key containing the input hash,
+filename and read/cleaning settings invalidates it when these inputs change.
+Preview conversion in `display.py` does not alter cleaning or export data.
 
 ## Missing-value examples
 
@@ -92,8 +83,8 @@ assert report.cells_filled == 1
 ```
 
 Generate additional missing-value demos with `.venv/bin/python -m scripts.generate_examples`.
-Local environments, caches, credentials and private data directories are ignored.
-Only fictional demo files belong in `examples/`. Review staged files before publishing.
+The `examples/` directory contains only fictional data. Local environments, caches,
+credentials and working data directories are excluded by `.gitignore`.
 
 ## Interface languages
 
@@ -107,3 +98,7 @@ Native framework/browser controls may use their own system language.
 
 The optional `scripts/capture_screenshots.py` uses Playwright to capture the actual
 app and check downloads; see [capture instructions](SCREENSHOTS_RU.md).
+
+## License
+
+MIT — see [LICENSE](../LICENSE).
