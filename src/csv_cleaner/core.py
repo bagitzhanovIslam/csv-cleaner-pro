@@ -18,7 +18,9 @@ class CleanOptions:
 
 def missing_mask(frame: pd.DataFrame) -> pd.DataFrame:
     """Empty strings and whitespace count as missing; literal NA/NULL do not."""
-    return frame.isna() | frame.map(lambda x: isinstance(x, str) and not x.strip())
+    # Empty string columns can retain their string dtype after map (pandas 3).
+    whitespace = frame.map(lambda x: isinstance(x, str) and not x.strip()).astype(bool)
+    return frame.isna() | whitespace
 
 
 @dataclass(frozen=True)

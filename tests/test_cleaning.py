@@ -44,6 +44,41 @@ def test_missing_literals_and_whitespace():
     assert missing_mask(frame)['a'].tolist() == [True, True, True, False, False, False, False]
 
 
+def test_missing_mask_mixed_types():
+    frame = pd.DataFrame({
+        'mixed': pd.Series([None, float('nan'), pd.NA, '', ' \t\n',
+                            'NA', 'NULL', 0, False, 1.5], dtype=object),
+        'number': pd.Series([pd.NA] + list(range(9)), dtype='Int64'),
+        'text': pd.Series([' ', None] + ['keep'] * 8, dtype='string'),
+    })
+    snapshot = frame.copy(deep=True)
+    expected = pd.DataFrame({
+        'mixed': [True] * 5 + [False] * 5,
+        'number': [True] + [False] * 9,
+        'text': [True, True] + [False] * 8,
+    })
+    assert_frame_equal(missing_mask(frame), expected)
+    assert_frame_equal(frame, snapshot)
+
+
+@pytest.mark.parametrize('dtype', [object, 'str', 'string', 'Int64', 'boolean'])
+def test_missing_mask_empty_columns_are_boolean(dtype):
+    frame = pd.DataFrame({'empty': pd.Series([], dtype=dtype)})
+    assert_frame_equal(missing_mask(frame), pd.DataFrame({'empty': pd.Series([], dtype=bool)}))
+
+
+def test_clean_mixed_types_preserves_missing_values_and_counts():
+    source = pd.DataFrame({'a': pd.Series([None, float('nan'), ' \t ', 0, False, ' A  B '], dtype=object)})
+    snapshot = source.copy(deep=True)
+    result, report = clean_table(source, CleanOptions(trim_spaces=True, remove_empty_rows=True))
+    assert_frame_equal(result, pd.DataFrame({'a': pd.Series([0, False, 'A B'], dtype=object)}))
+    assert_frame_equal(source, snapshot)
+    assert report.empty_rows_removed == 3
+    assert report.missing_before == 3
+    assert report.missing_after == 0
+    assert report.cells_changed == 2
+
+
 @pytest.mark.parametrize('columns', [('unknown',), ('a', 'a'), ()])
 def test_invalid_selection(columns):
     with pytest.raises(CleanerError):
