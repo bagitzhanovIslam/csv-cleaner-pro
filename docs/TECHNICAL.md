@@ -94,3 +94,16 @@ assert report.cells_filled == 1
 Generate additional missing-value demos with `.venv/bin/python -m scripts.generate_examples`.
 Local environments, caches, credentials and private data directories are ignored.
 Only fictional demo files belong in `examples/`. Review staged files before publishing.
+
+## Interface languages
+
+English is the default; Русский is available at the top. The presentation-only
+`src/csv_cleaner/i18n.py` catalog translates labels, hints, errors and report headings.
+Stable widget keys retain uploads, settings and results across language changes.
+Streamlit 1.67+ is required for the verified widget identity behavior. Domain cleaning
+functions and user-owned data remain unchanged. JSON downloads retain the original
+English field schema for machine consumption; on-screen report headings are localized.
+Native framework/browser controls may use their own system language.
+
+The optional `scripts/capture_screenshots.py` uses Playwright to capture the actual
+app and check downloads; see [capture instructions](SCREENSHOTS_RU.md).

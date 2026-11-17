@@ -8,6 +8,7 @@ Clean product lists, price tables and other CSV/XLSX files with rules you choose
 
 ## What it does
 
+- English / Русский switch with English by default; keeps uploads, settings and results when switching.
 - Opens CSV and XLSX and previews the first 20 rows.
 - Counts missing cells, including empty strings and whitespace.
 - Optionally trims whitespace, removes duplicate rows, and removes fully empty rows.
@@ -35,23 +36,32 @@ Open **http://127.0.0.1:8501**. Stop with `Ctrl+C`. For Fish, use `source .venv/
 
 1. Upload `examples/demo_input.csv` or `examples/demo_input.xlsx`.
 2. Keep all columns selected and enable all three cleaning switches.
-3. Click **Запустить обработку**.
+3. Click **Run cleaning**.
 4. Expect **6 → 3 rows**, **1 duplicate** and **2 empty rows** removed, **9 → 1 missing cells**, and **5 cells** changed by whitespace cleaning.
 5. Download the result and compare it with `examples/demo_output.csv` and `examples/cleaning_report.json`.
 
-The demo uses fictional product records, without personal data. The interface is in Russian; the code uses English names.
+The demo uses fictional product records, without personal data. The interface supports English and Russian. User values and column names stay unchanged; JSON exports keep a stable English field schema.
 
 ## Screenshots: input → settings → result
 
-Real browser screenshots have not been captured yet. The three planned views are:
+Real Chromium screenshots using only `examples/demo_input.csv`:
 
-| View | What the screenshot must show |
-|---|---|
-| 1. Source data | `demo_input.csv` uploaded; “Исходные данные”, 6 rows and 9 missing cells. |
-| 2. Cleaning settings | All columns selected, all three checkboxes enabled, missing values left unchanged. |
-| 3. Result | 6 → 3 rows, 1 duplicate and 2 empty rows removed, 9 → 1 missing cells, cleaned table and download controls. |
+![Uploaded source table](docs/screenshots/01-source.png)
+![Cleaning settings](docs/screenshots/02-settings.png)
+![Cleaned result and report](docs/screenshots/03-result.png)
 
-Follow the [exact capture instructions and filenames](docs/SCREENSHOTS_RU.md). Add the three images here only after capturing the real application; no placeholder images are included.
+[Reproduce these captures](docs/SCREENSHOTS_RU.md).
+
+## Technologies and tests
+
+Python 3.12+, Streamlit 1.67+, pandas, openpyxl, defusedxml and pytest.
+Localization uses a small Python catalog without additional runtime dependencies.
+
+**155 tests pass** with warnings treated as errors. Coverage includes both languages,
+all four missing-value modes, language-switch data preservation, Arrow-safe previews,
+and CSV/XLSX round trips. The real-browser check also verifies CSV, XLSX and JSON
+downloads and switching to Russian with the uploaded file and result retained.
+Playwright is optional and needed only to reproduce the browser check and screenshots.
 
 ## Documentation
 
