@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_python_sources_parse():
-    for path in [ROOT / 'app.py', * (ROOT / 'src').rglob('*.py'), *(ROOT / 'tests').rglob('*.py')]:
+    for path in [ROOT / 'app.py', *(ROOT / 'src').rglob('*.py'), *(ROOT / 'tests').rglob('*.py')]:
         ast.parse(path.read_text(), filename=str(path))
 
 

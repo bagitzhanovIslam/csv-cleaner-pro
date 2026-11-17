@@ -1,8 +1,9 @@
 """Pure cleaning functions; no file or UI side effects."""
-from dataclasses import dataclass, asdict
-import re
 import math
+import re
+from dataclasses import asdict, dataclass
 from numbers import Real
+
 import pandas as pd
 
 
@@ -106,6 +107,7 @@ def clean_table(frame: pd.DataFrame, options: CleanOptions) -> tuple[pd.DataFram
                     continue
                 ordered = sorted(float(v) for v in numbers)
                 middle = len(ordered) // 2
+                # Halve both middle values before adding to avoid float overflow.
                 replacement = (ordered[middle] if len(ordered) % 2 else
                                ordered[middle - 1] / 2 + ordered[middle] / 2)
                 if not math.isfinite(replacement):

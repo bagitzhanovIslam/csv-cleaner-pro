@@ -24,7 +24,9 @@ through PyArrow and check for Streamlit's automatic type-repair messages.
 
 ## Latest verified result
 
-**2026-11-17: 155 passed**, using `python -m pytest -W error -q`.
+**155 tests passed on 2026-11-18** with warnings treated as errors. They include
+20 Streamlit AppTest cases. To run those cases separately, use
+`python -m pytest -W error -q tests/test_app.py` in the activated environment.
 
 | Component | Tested version |
 |---|---|
@@ -59,7 +61,7 @@ updates the three real screenshots in `docs/screenshots/`, compares downloaded C
 bytes, XLSX cell contents and JSON with the supplied examples, and verifies that
 switching to Russian retains the upload and result. It also checks JavaScript errors.
 
-Verified on 2026-11-17 with Chromium 159 and Playwright 1.65.2. Expected result:
+Verified on 2026-11-18 with Chromium 159 and Playwright 1.65.2. Expected result:
 6 → 3 rows, 1 duplicate and 2 empty rows removed, 9 → 1 missing cells.
 [Manual capture instructions (RU)](docs/SCREENSHOTS_RU.md).
 
@@ -75,7 +77,7 @@ XLSX archives contain timestamps, so compare cell contents rather than binary ha
 ## Кратко по-русски
 
 Основная проверка: `.venv/bin/python -m pytest -W error -q` из корня проекта.
-Последний результат: **155 тестов пройдено**, 17 ноября 2026 года. Проверены оба
+Последний результат: **155 тестов пройдено**, 18 ноября 2026 года. Проверены оба
 языка, четыре режима пропусков, сохранение состояния, экспорт и PyArrow.
 Браузерная проверка необязательна; команды выше запускают настоящее приложение
 и обновляют скриншоты только на демонстрационных данных.

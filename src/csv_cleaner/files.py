@@ -3,10 +3,12 @@ import csv
 from io import BytesIO, StringIO
 from itertools import chain
 from pathlib import Path
-from zipfile import ZipFile, BadZipFile
+from zipfile import BadZipFile, ZipFile
+
 import pandas as pd
-from openpyxl import load_workbook, Workbook
-from openpyxl.utils.exceptions import InvalidFileException, IllegalCharacterError
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils.exceptions import IllegalCharacterError, InvalidFileException
+
 from .core import CleanerError
 
 MAX_FILE_BYTES = 10 * 1024 * 1024
@@ -20,7 +22,7 @@ SEPARATORS = (',', ';', '\t', '|')
 
 def _headers(raw: list[object]) -> list[str]:
     """Preserve original labels; disambiguate blanks/duplicates without collisions."""
-    labels = [str(x) if x is not None and str(x) != '' else f'Column {i+1}'
+    labels = [str(x) if x is not None and str(x) != '' else f'Column {i + 1}'
               for i, x in enumerate(raw)]
     reserved = set(labels)
     used: set[str] = set()
@@ -153,8 +155,8 @@ def export_table(frame: pd.DataFrame, format: str, *, separator: str = ',') -> b
             worksheet.append([None if pd.isna(v) else v for v in row])
             for column_number, value in enumerate(row, start=1):
                 if isinstance(value, str):
-                    worksheet.cell(row_number, column_number).data_type = 's'
                     # Formula-looking content is always literal text.
+                    worksheet.cell(row_number, column_number).data_type = 's'
         output = BytesIO()
         workbook.save(output)
         return output.getvalue()

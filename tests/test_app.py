@@ -1,8 +1,9 @@
-import pytest
-"""Streamlit's headless UI tests; no browser or personal data required."""
+"""Headless tests for the Streamlit interface."""
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 from streamlit.testing.v1 import AppTest
 
 APP = Path(__file__).resolve().parents[1] / 'app.py'

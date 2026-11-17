@@ -1,7 +1,5 @@
 # CSV Cleaner Pro
 
-**Turn messy CSV and Excel tables into clean, downloadable data — locally.**
-
 Clean product lists, price tables and other CSV/XLSX files with rules you choose. Preview the data, remove duplicates and extra spaces, handle missing values, then download the result and a JSON report. Includes fictional sample data.
 
 [Русская документация](README_RU.md) · [Technical reference](docs/TECHNICAL.md) · [Testing](TESTING.md)
@@ -17,7 +15,7 @@ Clean product lists, price tables and other CSV/XLSX files with rules you choose
 - Reports rows before/after, duplicate and empty row removals, filled cells, remaining missing cells, rows removed for missing values, and missing cells per column.
 - Downloads a new CSV (UTF-8 with BOM) or XLSX and a JSON report.
 
-All cleaning switches start **off**. Your original file is never overwritten. Files stay in the local Streamlit process; no paid services or external processing APIs are used.
+All cleaning switches start **off**. Your original file is never overwritten. The local Streamlit process handles all file processing.
 
 ## Run locally
 
@@ -40,7 +38,7 @@ Open **http://127.0.0.1:8501**. Stop with `Ctrl+C`. For Fish, use `source .venv/
 4. Expect **6 → 3 rows**, **1 duplicate** and **2 empty rows** removed, **9 → 1 missing cells**, and **5 cells** changed by whitespace cleaning.
 5. Download the result and compare it with `examples/demo_output.csv` and `examples/cleaning_report.json`.
 
-The demo uses fictional product records, without personal data. The interface supports English and Russian. User values and column names stay unchanged; JSON exports keep a stable English field schema.
+The demo uses fictional product records. JSON reports use the same English field names in both interface languages.
 
 ## Screenshots: input → settings → result
 
@@ -57,7 +55,7 @@ Real Chromium screenshots using only `examples/demo_input.csv`:
 Python 3.12+, Streamlit 1.67+, pandas, openpyxl, defusedxml and pytest.
 Localization uses a small Python catalog without additional runtime dependencies.
 
-**155 tests pass** with warnings treated as errors. Coverage includes both languages,
+The test suite covers both languages,
 all four missing-value modes, language-switch data preservation, Arrow-safe previews,
 and CSV/XLSX round trips. The real-browser check also verifies CSV, XLSX and JSON
 downloads and switching to Russian with the uploaded file and result retained.

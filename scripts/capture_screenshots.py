@@ -5,15 +5,16 @@ then run with PLAYWRIGHT_BROWSERS_PATH=.venv/playwright-browsers if needed.
 """
 import json
 from io import BytesIO
-from openpyxl import load_workbook
 from pathlib import Path
+
+from openpyxl import load_workbook
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 DEST = ROOT / 'docs' / 'screenshots'
 
 
-def main():
+def main() -> None:
     DEST.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True, channel="chromium")
@@ -31,7 +32,6 @@ def main():
         for label in ['Trim extra whitespace', 'Remove duplicates', 'Remove fully empty rows']:
             page.get_by_text(label, exact=True).click()
             page.wait_for_timeout(300)
-        # Capture the native settings container and its surrounding application.
         page.get_by_role('heading', name='Cleaning settings', exact=True).scroll_into_view_if_needed()
         page.get_by_role('button', name='Run cleaning', exact=True).scroll_into_view_if_needed()
         page.wait_for_timeout(600)
@@ -67,7 +67,6 @@ def main():
         actual = Path(download.value.path()).read_bytes()
         expected = (ROOT / 'examples/demo_output.csv').read_bytes()
         assert actual == expected, (actual[:100], expected[:100])
-        # Switch the actual browser UI and verify the uploaded file and result survive.
         selector = page.get_by_test_id('stSelectbox').filter(has_text='Language / Язык').get_by_role('combobox')
         selector.focus()
         selector.press('ArrowDown')
@@ -76,7 +75,7 @@ def main():
         page.get_by_text('6 → 3', exact=True).scroll_into_view_if_needed()
         assert page.get_by_text('6 → 3', exact=True).is_visible()
         assert not errors, errors
-        print('Three real screenshots captured; CSV/XLSX/JSON downloads and RU switch passed.')
+        print('Saved three screenshots and verified CSV, XLSX, JSON and the Russian interface.')
         browser.close()
 
 

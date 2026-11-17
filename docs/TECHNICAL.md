@@ -9,7 +9,7 @@
 | Header | First row is the header. Blank and repeated names receive unique labels; original spelling and spaces are otherwise retained. |
 | CSV encoding | Auto reads UTF-8/BOM or BOM-marked UTF-16. Choose cp1251 explicitly for legacy Russian files. Decoding never silently replaces characters. |
 | CSV delimiter | Auto attempts comma, semicolon, tab or pipe. Manual override is available. Check the preview before cleaning; ambiguous detection can produce a single column. |
-| Values | CSV is read as text to preserve `001`, `NA`, `NULL`, and dates. XLSX retains native numbers/dates where available. Existing values are preserved; filling requires an explicit choice. |
+| Values | CSV is read as text to preserve `001`, `NA`, `NULL`, and dates. XLSX retains native numbers/dates where available. Cleaning rules are opt-in. |
 | Missing cells | Null, empty string, and whitespace-only text count as missing. Missing values are reported across **all** columns. |
 | Whitespace | In selected text columns, trim edges and collapse whitespace runs (including line breaks) to one space. |
 | Duplicates | Before missing-value handling, after whitespace cleaning and optional empty-row removal, compare selected columns and keep the first row. Selecting fewer columns can remove rows with different values elsewhere. |
@@ -82,7 +82,7 @@ assert cleaned.loc[1, "price"] == 10
 assert report.cells_filled == 1
 ```
 
-Generate additional missing-value demos with `.venv/bin/python -m scripts.generate_examples`.
+Generate additional missing-value demos with `python -m scripts.generate_examples`.
 The `examples/` directory contains only fictional data. Local environments, caches,
 credentials and working data directories are excluded by `.gitignore`.
 
@@ -91,9 +91,9 @@ credentials and working data directories are excluded by `.gitignore`.
 English is the default; Русский is available at the top. The presentation-only
 `src/csv_cleaner/i18n.py` catalog translates labels, hints, errors and report headings.
 Stable widget keys retain uploads, settings and results across language changes.
-Streamlit 1.67+ is required for the verified widget identity behavior. Domain cleaning
-functions and user-owned data remain unchanged. JSON downloads retain the original
-English field schema for machine consumption; on-screen report headings are localized.
+The interface uses Streamlit 1.67+ for stable widget identity across language changes.
+JSON downloads use English field names in both languages. Only the on-screen report
+headings are translated.
 Native framework/browser controls may use their own system language.
 
 The optional `scripts/capture_screenshots.py` uses Playwright to capture the actual

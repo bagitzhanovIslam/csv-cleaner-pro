@@ -2,14 +2,19 @@
 import hashlib
 import json
 import logging
+
 import streamlit as st
-from src.csv_cleaner.i18n import translate, translate_error, localized_report
+
 from src.csv_cleaner.core import CleanerError, CleanOptions, clean_table, missing_mask
-from src.csv_cleaner.files import read_table, export_table
 from src.csv_cleaner.display import for_streamlit
+from src.csv_cleaner.files import export_table, read_table
+from src.csv_cleaner.i18n import localized_report, translate, translate_error
+
 st.set_page_config(page_title='CSV Cleaner Pro', page_icon='🧹', layout='wide')
 language = st.selectbox('Language / Язык', ['en', 'ru'], format_func=lambda value: {'en': 'English', 'ru': 'Русский'}[value], key='language')
-def t(text):
+
+
+def t(text: str) -> str:
     return translate(text, language)
 
 st.title('CSV Cleaner Pro')
@@ -83,13 +88,13 @@ if 'result' in st.session_state:
     st.dataframe(for_streamlit(cleaned.head(20)), hide_index=True, width='stretch')
     with st.expander(t('Отчёт по столбцам')):
         st.json(localized_report(report.to_dict(), language))
-    format = st.radio(t('Формат результата'), ['csv', 'xlsx'], horizontal=True, key='ui_output_format')
-    out_sep = st.selectbox(t('Разделитель результата CSV'), [',', ';', '\t', '|'], format_func=lambda value: t('Табуляция') if value == '\t' else value, disabled=format != 'csv', key='ui_output_csv_delimiter')
-    if format == 'csv':
+    output_format = st.radio(t('Формат результата'), ['csv', 'xlsx'], horizontal=True, key='ui_output_format')
+    out_sep = st.selectbox(t('Разделитель результата CSV'), [',', ';', '\t', '|'], format_func=lambda value: t('Табуляция') if value == '\t' else value, disabled=output_format != 'csv', key='ui_output_csv_delimiter')
+    if output_format == 'csv':
         st.caption(t('CSV хранит текст без изменений. Если значения начинаются с =, +, - или @, импортируйте их в Excel как текст: Excel может интерпретировать их как формулы. XLSX экспортирует такие значения текстом.'))
     try:
-        output = export_table(cleaned, format, separator=out_sep)
-        st.download_button(t('Скачать очищенную таблицу'), output, file_name=f'cleaned.{format}', mime='text/csv' if format == 'csv' else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', key='ui_download_cleaned_table')
+        output = export_table(cleaned, output_format, separator=out_sep)
+        st.download_button(t('Скачать очищенную таблицу'), output, file_name=f'cleaned.{output_format}', mime='text/csv' if output_format == 'csv' else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', key='ui_download_cleaned_table')
         st.download_button(t('Скачать отчёт JSON'), json.dumps(report.to_dict(), ensure_ascii=False, indent=2).encode(), file_name='cleaning_report.json', mime='application/json', key='ui_download_json_report')
     except CleanerError as exc:
         st.error(translate_error(str(exc), language))
