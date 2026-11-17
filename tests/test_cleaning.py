@@ -89,3 +89,91 @@ def test_empty_result():
     result, report = clean_table(pd.DataFrame({'a': ['', ' ']}), CleanOptions(remove_empty_rows=True))
     assert result.empty and list(result.columns) == ['a']
     assert report.rows_before - report.rows_after == report.empty_rows_removed + report.duplicates_removed
+
+
+@pytest.mark.parametrize('strategy', ['keep', 'drop', 'value', 'median'])
+def test_missing_strategies_mixed_russian(strategy):
+    frame = pd.DataFrame({
+        'Число': pd.Series([1, 3, None, float('nan'), '', ' \t'], dtype=object),
+        'Текст': ['Москва', 'Москва', '', None, 'Казань', 'Омск'],
+        'Смешанный': ['1', 'текст', None, '', ' ', 4],
+    })
+    snapshot = frame.copy(deep=True)
+    result, report = clean_table(frame, CleanOptions(('Число',), missing_strategy=strategy, fill_value='нет'))
+    assert_frame_equal(frame, snapshot)
+    assert report.cells_filled == (4 if strategy in {'value', 'median'} else 0)
+    assert report.missing_rows_removed == (4 if strategy == 'drop' else 0)
+    if strategy in {'value', 'median'}:
+        assert result['Число'].tolist() == [1, 3] + (['нет'] * 4 if strategy == 'value' else [2.0] * 4)
+        assert_frame_equal(result[['Текст', 'Смешанный']], frame[['Текст', 'Смешанный']])
+    assert report.missing_after == int(missing_mask(result).sum().sum())
+    assert report.rows_before - report.rows_after == report.missing_rows_removed
+
+
+def test_median_numeric_text_and_non_numeric_columns():
+    frame = pd.DataFrame({'CSV': ['001', '3', ' ', None],
+                          'Текст': ['Москва', None, '', 'Омск'],
+                          'Смешанный': [1, 'нет', None, ''],
+                          'Флаги': [True, False, None, None],
+                          'Дата': [pd.Timestamp('2026-01-01'), None, None, None]})
+    result, report = clean_table(frame, CleanOptions(missing_strategy='median'))
+    assert result['CSV'].tolist() == ['001', '3', 2.0, 2.0]
+    assert_frame_equal(result.drop(columns='CSV'), frame.drop(columns='CSV'))
+    assert report.cells_filled == 2
+
+
+@pytest.mark.parametrize('dtype', ['float64', 'Int64', 'Float64', 'string', object])
+def test_median_all_missing_columns(dtype):
+    frame = pd.DataFrame({'Пусто': pd.Series([None, None], dtype=dtype)})
+    result, report = clean_table(frame, CleanOptions(missing_strategy='median'))
+    assert_frame_equal(result, frame)
+    assert report.cells_filled == 0 and report.missing_after == 2
+
+
+@pytest.mark.parametrize('dtype', ['Int64', 'Float64', 'string', object])
+@pytest.mark.parametrize('strategy', ['value', 'median'])
+def test_fill_nullable_types_without_warnings(dtype, strategy):
+    frame = pd.DataFrame({'a': pd.Series([1, 2, None], dtype=dtype) if dtype != 'string'
+                          else pd.Series(['1', '2', None], dtype=dtype)})
+    result, report = clean_table(frame, CleanOptions(missing_strategy=strategy, fill_value='готово'))
+    assert result.iloc[:2, 0].tolist() == frame.iloc[:2, 0].tolist()
+    assert result.iloc[2, 0] == ('готово' if strategy == 'value' else 1.5)
+    assert report.cells_filled == 1
+
+
+@pytest.mark.parametrize('options', [CleanOptions(missing_strategy='bad'),
+    CleanOptions(missing_strategy='value'), CleanOptions(missing_strategy='value', fill_value=' \t'),
+    CleanOptions((), missing_strategy='drop')])
+def test_invalid_missing_options(options):
+    with pytest.raises(CleanerError):
+        clean_table(pd.DataFrame({'a': [None]}), options)
+
+
+def test_removals_before_fill_and_json_report():
+    import json
+    frame = pd.DataFrame({'Город': ['Москва', 'Москва', '', 'Омск'], 'Цена': ['1', '1', '', '']})
+    result, report = clean_table(frame, CleanOptions(remove_duplicates=True, remove_empty_rows=True,
+                                                    missing_strategy='value', fill_value='нет'))
+    assert len(result) == 2
+    assert report.duplicates_removed == report.empty_rows_removed == report.cells_filled == 1
+    assert json.loads(json.dumps(report.to_dict()))['cells_filled'] == 1
+
+
+@pytest.mark.parametrize('values,expected', [([1e308, 1e308, None], 1e308),
+    ([-1e308, 1e308, None], 0), ([float('inf'), 1, None], None),
+    (['NaN', '1', None], None)])
+def test_median_extreme_and_nonfinite_values(values, expected):
+    frame = pd.DataFrame({'a': values}, dtype=object)
+    result, report = clean_table(frame, CleanOptions(missing_strategy='median'))
+    if expected is None:
+        assert result.iloc[2, 0] is None and report.cells_filled == 0
+    else:
+        assert result.iloc[2, 0] == expected and report.cells_filled == 1
+
+
+@pytest.mark.parametrize('strategy', ['keep', 'drop', 'value', 'median'])
+def test_missing_strategies_header_only(strategy):
+    source = pd.DataFrame({'Цена': pd.Series([], dtype='Float64')})
+    result, report = clean_table(source, CleanOptions(missing_strategy=strategy, fill_value='нет'))
+    assert_frame_equal(result, source)
+    assert report.cells_filled == report.missing_rows_removed == report.missing_after == 0

@@ -1,0 +1,19 @@
+{
+  "rows_before": 4,
+  "rows_after": 4,
+  "duplicates_removed": 0,
+  "empty_rows_removed": 0,
+  "missing_before": 1,
+  "missing_after": 0,
+  "missing_by_column_before": {
+    "Город": 0,
+    "Цена": 1
+  },
+  "missing_by_column_after": {
+    "Город": 0,
+    "Цена": 0
+  },
+  "cells_changed": 0,
+  "cells_filled": 1,
+  "missing_rows_removed": 0
+}

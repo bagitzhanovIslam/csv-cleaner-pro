@@ -11,8 +11,9 @@ A small Python portfolio project for practical data-cleaning jobs: inspect a tab
 - Opens CSV and XLSX and previews the first 20 rows.
 - Counts missing cells, including empty strings and whitespace.
 - Optionally trims whitespace, removes duplicate rows, and removes fully empty rows.
-- Lets you choose the columns used for whitespace cleaning and duplicate comparison.
-- Reports rows before/after, duplicate and empty row removals, changed cells, and missing cells per column.
+- Handles missing cells in selected columns: keep (default), drop affected rows, fill with a supplied value, or fill numeric columns with the median.
+- Lets you choose columns for whitespace cleaning, duplicate comparison and missing-value handling.
+- Reports rows before/after, duplicate and empty row removals, filled cells, remaining missing cells, rows removed for missing values, and missing cells per column.
 - Downloads a new CSV (UTF-8 with BOM) or XLSX and a JSON report.
 
 All cleaning switches start **off**. Your original file is never overwritten. Files stay in the local Streamlit process; no paid services or external processing APIs are used.
@@ -48,10 +49,10 @@ The demo uses fictional product records, without personal data. The interface is
 | Header | First row is the header. Blank and repeated names receive unique labels; original spelling and spaces are otherwise retained. |
 | CSV encoding | Auto reads UTF-8/BOM or BOM-marked UTF-16. Choose cp1251 explicitly for legacy Russian files. Decoding never silently replaces characters. |
 | CSV delimiter | Auto attempts comma, semicolon, tab or pipe. Manual override is available. Check the preview before cleaning; ambiguous detection can produce a single column. |
-| Values | CSV is read as text to preserve `001`, `NA`, `NULL`, and dates. XLSX retains native numbers/dates where available. No automatic type conversion or missing-value filling. |
+| Values | CSV is read as text to preserve `001`, `NA`, `NULL`, and dates. XLSX retains native numbers/dates where available. Existing values are preserved; filling requires an explicit choice. |
 | Missing cells | Null, empty string, and whitespace-only text count as missing. Missing values are reported across **all** columns. |
 | Whitespace | In selected text columns, trim edges and collapse whitespace runs (including line breaks) to one space. |
-| Duplicates | After whitespace cleaning and optional empty-row removal, compare selected columns and keep the first row. Selecting fewer columns can remove rows with different values elsewhere. |
+| Duplicates | Before missing-value handling, after whitespace cleaning and optional empty-row removal, compare selected columns and keep the first row. Selecting fewer columns can remove rows with different values elsewhere. |
 | Empty rows | Remove only when every cell across the entire table is missing. Independent of the column selection. |
 | XLSX scope | Only the selected worksheet, starting at row 1, is processed. Styles, charts, other sheets and workbook metadata are not copied. Formula text is read without execution and exported as text. |
 | Empty data | Zero-byte/blank files are errors; a header-only table is valid. XLSX trailing unused rows are not reliable data records. |
@@ -90,3 +91,45 @@ Dependencies use bounded version ranges in `requirements.txt`; this is not a ful
 Skills: Python, pandas, openpyxl, Streamlit, pytest, CSV/Excel automation, validation, type hints, error handling, Git. Honest portfolio copy and a job proposal template are in [docs/PORTFOLIO_RU.md](docs/PORTFOLIO_RU.md). Screenshot instructions are in [docs/SCREENSHOTS_RU.md](docs/SCREENSHOTS_RU.md).
 
 MIT License — see [LICENSE](LICENSE).
+
+## Fish shell on Arch Linux
+
+No activation is required; these commands work in Fish and Bash:
+
+```fish
+cd /home/kael/csv-cleaner-pro
+python -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m streamlit run app.py
+```
+
+For optional Fish activation use `source .venv/bin/activate.fish`.
+Run checks with `.venv/bin/python -m pytest -W error -q`.
+
+## Missing-value examples
+
+Select columns, then choose a missing-value mode. A supplied value is literal text
+(e.g. `Unknown`); blank or whitespace-only replacements are rejected. Other cells
+and unselected columns are preserved unless another enabled rule changes them.
+Median accepts columns whose nonmissing values are all finite numbers or numeric
+text (including CSV). It skips mixed text, booleans, dates and columns without
+observations. Entirely empty numeric columns stay missing because no median exists.
+Literal `NA` and `NULL` remain text. The order is whitespace → empty rows →
+duplicates → missing-value handling. Filling can create new duplicates; they are
+not removed afterward. Removal counts describe separate stages; filled-cell counts
+refer to retained rows. JSON includes `cells_filled` and `missing_rows_removed`.
+
+```python
+from src.csv_cleaner.core import CleanOptions, clean_table
+from src.csv_cleaner.files import read_table
+
+frame = read_table(b"id,price\n001,10\n002,\n", "prices.csv")
+cleaned, report = clean_table(frame, CleanOptions(
+    columns=("price",), missing_strategy="median"))
+assert cleaned.loc[1, "price"] == 10
+assert report.cells_filled == 1
+```
+
+Generate additional missing-value demos with `.venv/bin/python -m scripts.generate_examples`.
+Local environments, caches, credentials and private data directories are ignored.
+Only fictional demo files belong in `examples/`. Review staged files before publishing.

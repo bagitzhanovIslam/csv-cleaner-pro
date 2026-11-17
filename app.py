@@ -39,14 +39,23 @@ st.caption(f'{len(frame):,} строк · {len(frame.columns)} столбцов 
 st.dataframe(frame.head(20), hide_index=True, width='stretch')
 with st.container(border=True):
     st.subheader('Настройки очистки')
-    columns = st.multiselect('Столбцы для очистки пробелов и сравнения дубликатов',
+    columns = st.multiselect('Столбцы для очистки, дубликатов и обработки пропусков',
                              list(frame.columns), default=list(frame.columns))
     c1, c2, c3 = st.columns(3)
     trim = c1.checkbox('Очистить лишние пробелы', value=False)
     duplicates = c2.checkbox('Удалить дубликаты', value=False)
     empty = c3.checkbox('Удалить полностью пустые строки', value=False)
     st.caption('Пробелы: обрезка по краям и замена повторяющихся пробельных символов одним пробелом, включая переносы строк. Дубликаты: сохраняется первая строка по выбранным столбцам; остальные строки удаляются целиком. Пустые строки проверяются по всем столбцам. Столбцы не удаляются.')
-options = CleanOptions(tuple(columns), trim, duplicates, empty)
+    strategies = {
+        'keep': 'Оставить пропуски без изменений',
+        'drop': 'Удалить строки с пропусками в выбранных столбцах',
+        'value': 'Заполнить пропуски указанным значением',
+        'median': 'Заполнить пропуски в числовых столбцах медианой',
+    }
+    strategy = st.selectbox('Обработка пропусков', list(strategies), format_func=strategies.get)
+    fill_value = st.text_input('Значение для заполнения', disabled=strategy != 'value')
+    st.caption('Медиана: все непустые значения столбца должны быть числами или числовым текстом. Текстовые и полностью пустые столбцы остаются без изменений. Порядок: пробелы → пустые строки → дубликаты → обработка пропусков.')
+options = CleanOptions(tuple(columns), trim, duplicates, empty, strategy, fill_value)
 result_key = (source_key, options)
 if st.session_state.get('result_key') != result_key:
     st.session_state.pop('result', None)
@@ -68,6 +77,10 @@ if 'result' in st.session_state:
     metrics[1].metric('Удалено дубликатов', report.duplicates_removed)
     metrics[2].metric('Удалено пустых строк', report.empty_rows_removed)
     metrics[3].metric('Пустых значений до → после', f'{report.missing_before} → {report.missing_after}')
+    extra = st.columns(3)
+    extra[0].metric('Заполнено ячеек', report.cells_filled)
+    extra[1].metric('Осталось пропусков', report.missing_after)
+    extra[2].metric('Удалено строк с пропусками', report.missing_rows_removed)
     st.caption(f'Изменено ячеек при очистке пробелов: {report.cells_changed}. Пустыми считаются отсутствующие значения, пустые строки и строки из пробелов; NA и NULL сохраняются как текст.')
     st.dataframe(cleaned.head(20), hide_index=True, width='stretch')
     with st.expander('Отчёт по столбцам'):

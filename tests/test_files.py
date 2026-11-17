@@ -147,3 +147,21 @@ def test_xlsx_export_refuses_silent_truncation():
 def test_invalid_export():
     with pytest.raises(CleanerError):
         export_table(pd.DataFrame({'a': ['x']}), 'pdf')
+
+
+@pytest.mark.parametrize('format', ['csv', 'xlsx'])
+@pytest.mark.parametrize('strategy', ['keep', 'drop', 'value', 'median'])
+def test_export_after_missing_processing(format, strategy):
+    from src.csv_cleaner.core import CleanOptions, clean_table, missing_mask
+    original = pd.DataFrame({'Город': ['Москва', 'Москва', 'Омск', ' '],
+                             'Цена': ['001', '001', '', None]}, dtype=object)
+    cleaned, report = clean_table(original, CleanOptions(remove_duplicates=True,
+        remove_empty_rows=True, missing_strategy=strategy, fill_value='нет'))
+    restored = read_table(export_table(cleaned, format), f'result.{format}')
+    assert len(restored) == report.rows_after
+    assert restored.iloc[0].tolist() == ['Москва', '001']
+    assert int(missing_mask(restored).sum().sum()) == report.missing_after
+    if strategy == 'value':
+        assert restored.iloc[1, 1] == 'нет'
+    if strategy == 'median':
+        assert float(restored.iloc[1, 1]) == 1

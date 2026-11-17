@@ -7,3 +7,26 @@ __pycache__/
 uploads/
 output/
 .coverage
+
+# Local environments, credentials and private working files
+venv/
+env/
+.env.*
+!.env.example
+.aws/
+.codex/
+.agents/
+*.pem
+*.key
+secrets.*
+data/
+local/
+*.log
+*.tmp
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+coverage.xml
+.DS_Store
+.idea/
+.vscode/

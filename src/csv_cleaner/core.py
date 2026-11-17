@@ -1,6 +1,8 @@
 """Pure cleaning functions; no file or UI side effects."""
 from dataclasses import dataclass, asdict
 import re
+import math
+from numbers import Real
 import pandas as pd
 
 
@@ -14,6 +16,8 @@ class CleanOptions:
     trim_spaces: bool = False
     remove_duplicates: bool = False
     remove_empty_rows: bool = False
+    missing_strategy: str = "keep"
+    fill_value: str = ""
 
 
 def missing_mask(frame: pd.DataFrame) -> pd.DataFrame:
@@ -34,6 +38,8 @@ class CleanReport:
     missing_by_column_before: dict[str, int]
     missing_by_column_after: dict[str, int]
     cells_changed: int
+    cells_filled: int
+    missing_rows_removed: int
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -45,8 +51,12 @@ def clean_table(frame: pd.DataFrame, options: CleanOptions) -> tuple[pd.DataFram
         raise CleanerError('Выбран неизвестный столбец. Загрузите файл заново.')
     if len(set(columns)) != len(columns):
         raise CleanerError('Столбцы для обработки не должны повторяться.')
-    if not columns and (options.trim_spaces or options.remove_duplicates):
-        raise CleanerError('Выберите хотя бы один столбец для очистки или поиска дубликатов.')
+    if options.missing_strategy not in {"keep", "drop", "value", "median"}:
+        raise CleanerError("Неизвестный способ обработки пропусков.")
+    if options.missing_strategy == "value" and not options.fill_value.strip():
+        raise CleanerError("Укажите непустое значение для заполнения пропусков.")
+    if not columns and (options.trim_spaces or options.remove_duplicates or options.missing_strategy != "keep"):
+        raise CleanerError('Выберите хотя бы один столбец для обработки.')
     result = frame.copy(deep=True)
     before = missing_mask(frame)
     changed = 0
@@ -70,9 +80,45 @@ def clean_table(frame: pd.DataFrame, options: CleanOptions) -> tuple[pd.DataFram
         old_count = len(result)
         result = result.drop_duplicates(subset=columns, keep='first').copy()
         duplicates = old_count - len(result)
+    # Remove rows before filling, so fills never hide empty rows or duplicates.
+    missing_removed = 0
+    filled = 0
+    if options.missing_strategy == 'drop':
+        drop = missing_mask(result)[columns].any(axis=1)
+        missing_removed = int(drop.sum())
+        result = result.loc[~drop].copy()
+    elif options.missing_strategy in {'value', 'median'}:
+        mask = missing_mask(result)
+        for col in columns:
+            gaps = mask[col]
+            if not gaps.any():
+                continue
+            replacement = options.fill_value
+            if options.missing_strategy == 'median':
+                present = result.loc[~gaps, col]
+                # Numeric text is supported for CSV; boolean/date/text columns are not.
+                if present.empty or not present.map(
+                    lambda v: isinstance(v, (str, Real)) and not isinstance(v, bool)
+                ).all():
+                    continue
+                numbers = pd.to_numeric(present, errors='coerce')
+                if numbers.isna().any() or not numbers.map(math.isfinite).all():
+                    continue
+                ordered = sorted(float(v) for v in numbers)
+                middle = len(ordered) // 2
+                replacement = (ordered[middle] if len(ordered) % 2 else
+                               ordered[middle - 1] / 2 + ordered[middle] / 2)
+                if not math.isfinite(replacement):
+                    continue
+            # Object assignment supports string/nullable numeric dtypes without
+            # incompatible-dtype warnings or coercion of existing values.
+            values = result[col].astype(object)
+            values.loc[gaps] = replacement
+            result[col] = values
+            filled += int(gaps.sum())
     after = missing_mask(result)
     report = CleanReport(len(frame), len(result), duplicates, empty_removed,
                          int(before.sum().sum()), int(after.sum().sum()),
                          {str(k): int(v) for k, v in before.sum().items()},
-                         {str(k): int(v) for k, v in after.sum().items()}, changed)
+                         {str(k): int(v) for k, v in after.sum().items()}, changed, filled, missing_removed)
     return result.reset_index(drop=True), report
